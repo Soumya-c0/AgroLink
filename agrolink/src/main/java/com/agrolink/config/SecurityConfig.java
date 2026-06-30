@@ -4,6 +4,7 @@ import com.agrolink.security.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -25,7 +26,6 @@ public class SecurityConfig {
             throws Exception {
 
         http
-
                 .csrf(csrf -> csrf.disable())
 
                 .cors(Customizer.withDefaults())
@@ -37,21 +37,35 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        .requestMatchers(
-                                "/api/auth/**"
-                        ).permitAll()
+                        // Public endpoints
+                        .requestMatchers("/api/auth/**")
+                        .permitAll()
 
-                        .requestMatchers(
-                                "/api/admin/**"
-                        ).hasRole("ADMIN")
+                        // Admin APIs
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
 
-                        .requestMatchers(
-                                "/api/farmer/**"
-                        ).hasRole("FARMER")
+                        // Farmer APIs
+                        .requestMatchers(HttpMethod.POST, "/api/contracts")
+                        .hasRole("FARMER")
 
-                        .requestMatchers(
-                                "/api/buyer/**"
-                        ).hasRole("BUYER")
+                        // Buyer APIs
+                        .requestMatchers(HttpMethod.PUT, "/api/contracts/*/accept")
+                        .hasRole("BUYER")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/contracts/*/reject")
+                        .hasRole("BUYER")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/contracts/*/complete")
+                        .hasRole("BUYER")
+
+                        // Admin only delete
+                        .requestMatchers(HttpMethod.DELETE, "/api/contracts/**")
+                        .hasRole("ADMIN")
+
+                        // Any authenticated user can view contracts
+                        .requestMatchers(HttpMethod.GET, "/api/contracts/**")
+                        .authenticated()
 
                         .anyRequest()
                         .authenticated()
@@ -65,5 +79,4 @@ public class SecurityConfig {
 
         return http.build();
     }
-
 }
